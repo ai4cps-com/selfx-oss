@@ -13,7 +13,7 @@ Read [our tutorial](https://selfx.ai4cps.com/getting-started).
 - [dash.gallery](https://dash.gallery): Dash app gallery with Python & R code
 
 <div align="center">
-  <a href="https://dash.plotly.com/project-maintenance">
+  <a href="https://www.ai4cps.com">
     <img src="https://www.ai4cps.com/assets/selfx-dark.svg" width="400px" alt="Maintained by AI4CPS">
   </a>
 </div>
