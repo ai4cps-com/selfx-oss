@@ -10,17 +10,17 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    steps:
+    steps:    
+      - name: Check out source
+        uses: actions/checkout@v4
+
       - name: Debug locate version.py
         run: |
           pwd
           ls -la
           ls -la selfx || true
           find . -maxdepth 4 -type f -name "version.py" -print || true
-    
-      - name: Check out source
-        uses: actions/checkout@v4
-
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
