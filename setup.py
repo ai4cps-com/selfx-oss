@@ -37,8 +37,8 @@ setup(
     url="https://ai4cps.com/selfx",
     project_urls={
         "Documentation": "https://selfx.ai4cps.com",
-        "Source": "https://github.com/ai4cps/selfx-oss",
-        "Issue Tracker": "https://github.com/ai4cps/selfx-oss/issues",
+        "Source": "https://github.com/ai4cps-com/selfx-oss",
+        "Issue Tracker": "https://github.com/ai4cps-com/selfx-oss/issues",
     },
     classifiers=[
         "Development Status :: 4 - Beta",
