@@ -19,7 +19,7 @@ jobs:
           pwd
           ls -la
           ls -la selfx || true
-          find . -maxdepth 4 -type f -name "version.py" -print || true
+          find . -maxdepth 4 -type f -name "install.txt" -print || true
       
       - name: Set up Python
         uses: actions/setup-python@v5
