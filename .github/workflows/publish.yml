@@ -11,6 +11,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug locate version.py
+        run: |
+          pwd
+          ls -la
+          ls -la selfx || true
+          find . -maxdepth 4 -type f -name "version.py" -print || true
+    
       - name: Check out source
         uses: actions/checkout@v4
 
@@ -21,13 +28,6 @@ jobs:
 
       - name: Install build tooling
         run: python -m pip install --upgrade pip build
-
-      - name: Debug locate version.py
-        run: |
-          pwd
-          ls -la
-          ls -la selfx || true
-          find . -maxdepth 4 -type f -name "version.py" -print || true
       
       - name: Build sdist and wheel
         run: python -m build
