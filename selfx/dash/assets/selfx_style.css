@@ -1,0 +1,756 @@
+/* ========= Theme ========= */
+:root{
+  --font: Poppins, serif;
+
+  --sidebar: #242342;
+  --topbar:  #191934;
+  --text:    #191835;
+  --accent:  #7BFCEF;
+  --hover:   #3A3956;
+
+  --h-topbar: 60px;
+  --h-control: 60px;
+
+  --radius: 8px;
+}
+
+/* ========= Global ========= */
+*{ font-family: var(--font); }
+
+body{
+  background-color: #fff;
+  color: #000;
+  font-family: var(--font);
+}
+
+h4, p, div, textarea{ color: var(--text); }
+td{ text-align: left; }
+i{ padding-right: 1rem; }
+
+a:hover{ text-decoration: none; }
+A{
+  text-align: center;
+  align-items: center;
+  color: var(--hover);
+  display: inline-flex;
+}
+
+/* Remove focus effects */
+*:focus{
+  outline: none !important;
+  box-shadow: none;
+  border-color: inherit;
+  -webkit-box-shadow: none !important;
+}
+*:focus-visible{
+  border-color: var(--accent);
+  color: #1B1A39;
+  border-style: none;
+  outline: none !important;
+}
+
+/* ========= Dash Loading Spinner ========= */
+.dash-spinner{
+  z-index: 999;         /* above content, below topbar */
+  top: 300px !important;
+  border-color: var(--sidebar) !important;
+  border-top-color: transparent !important;
+}
+._dash-loading-callback{
+  color: var(--sidebar) !important;
+}
+
+/* ========= Base Template ========= */
+#base_template{
+  background-color: var(--sidebar);
+  color: #fff;
+  font-family: var(--font);
+}
+
+/* ========= Layout ========= */
+#nav_tools{ padding-top: 20px; }
+
+.sidebar_style{
+  position: fixed;
+  top: var(--h-topbar);
+  left: 0;
+  bottom: 0;
+  width: 15rem;
+  padding: 0;
+  background-color: var(--sidebar);
+  border: 0;
+}
+.sidebar_style .dash-dropdown{
+  width: 100%;
+  padding: 8% 5% 0 5%;
+}
+
+/* Everything right of sidebar */
+.content_style{
+  margin-left: 17rem;
+  margin-right: 20px;
+  padding-top: var(--h-topbar);
+  padding-right: 0;
+  padding-left: 0;
+  padding-bottom: 0;
+  background-color: #fff;
+}
+
+.content_title_style{
+  color: #000;
+  opacity: 1;
+  font-size: 36px;
+  display: inline-flex;
+  margin: 0 0 0 1rem;
+  padding: 30px 0 20px 0;
+}
+
+/* ========= Logo ========= */
+.logo_div{
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  height: var(--h-topbar);
+  padding: 0;
+  width: 15rem;
+}
+.logo{
+  width: 100%;
+  height: 50px;
+  padding: 5px 0;
+}
+
+/* ========= Topbar ========= */
+.topbar_style,
+.topbar_style_left,
+.topbar_style_right,
+.topbar_style_right_of_logo{
+  background-color: var(--topbar);
+  height: var(--h-topbar);
+  display: flex;
+}
+
+.topbar_style{
+  width: 100%;
+  position: fixed;
+  z-index: 1000;
+}
+.topbar_style_left,
+.topbar_style_right{
+  width: 50%;
+}
+.topbar_style_right,
+.topbar_style_right_of_logo{
+  justify-content: flex-end;
+}
+.topbar_style_right_of_logo{ flex-grow: 1; }
+
+.topbar_buttons_style{
+  text-align: center;
+  height: var(--h-topbar);
+  align-items: center;
+  vertical-align: middle;
+  justify-content: left;
+  display: inline-flex;
+  width: 20rem;
+  background-color: var(--topbar);
+  color: #fff;
+  border: 0;
+}
+.topbar_buttons_style:hover{
+  background-color: var(--hover);
+  color: #fff;
+}
+
+/* ========= Sidebar Buttons ========= */
+.sidebar_buttons_style{
+  background-color: var(--sidebar);
+  color: #fff;
+  opacity: 1;
+  padding: 12px;
+  min-width: 160px;
+  text-align: center;
+  text-decoration: none;
+  justify-content: left;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0;
+  border-top: 0;
+  font-size: 16px;
+  border-radius: 0;
+}
+.sidebar_buttons_style:hover{ color: #fff; }
+
+.sidebar_buttons_style.nav-link{
+  border-radius: 0;
+  font-weight: 500;
+  padding-left: 40px;
+}
+.sidebar_buttons_style.nav-link.active{
+  background-color: var(--accent);
+  color: var(--text);
+}
+
+/* ========= Generic Buttons / Links ========= */
+button{
+  padding: 12px 2rem;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0;
+  border-radius: var(--radius);
+  border-width: 0;
+  background: var(--accent);
+  opacity: 1;
+  color: #1B1A39;
+}
+button:hover,
+.nav-link:hover{
+  background-color: var(--hover);
+  color: #fff;
+}
+.nav-link:focus{
+  border-color: var(--accent);
+  color: #fff;
+  border: 0;
+  outline: none;
+}
+
+/* ========= Content Controls ========= */
+.content_control,
+.content_control_wide{
+  padding-left: 5%;
+  padding-right: 5%;
+  padding-bottom: 10px;
+}
+.content_control{ width: 50%; }
+.content_control_wide{
+  width: 75%;
+  height: 40px;
+  margin: 2px;
+}
+
+.content_control label{ padding: 2px; }
+
+/* align RHS inputs consistently */
+.content_control > div,
+.content_control > input,
+.content_control > textarea,
+.content_control .dash-dropdown,
+.content_control .form-control,
+.content_control_wide > div,
+.content_control_wide > input,
+.content_control_wide > textarea,
+.content_control_wide .dash-dropdown{
+  margin-left: auto;
+  float: right;
+  padding: 0;
+}
+
+.content_control > div,
+.content_control > input{ width: 30%; }
+.content_control > textarea,
+.content_control .dash-dropdown{ width: 50%; }
+
+.content_control .form-control{
+  margin-left: auto;
+  float: right;
+  display: flex;
+  width: 70%;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+.content_control_wide > div,
+.content_control_wide > input{ width: 70%; }
+.content_control_wide > textarea,
+.content_control_wide .dash-dropdown{ width: 50%; }
+
+.content_control_wide .dash-dropdown{ height: 40px !important; }
+
+.content_control_wide .Select-value{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #F9F9F9;
+  font-size: 16px;
+  padding: 2px;
+  height: 40px !important;
+}
+
+/* ========= Small Custom Button ========= */
+.tinybutton{
+  padding: 2px;
+  margin: 2px;
+  border: none;
+  background: #007bff;
+  color: #fff;
+  font-size: large;
+  height: 20px;
+  width: 5rem;
+  text-align: center;
+  line-height: 20px;
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ========= Dropdowns / Select (Dash React-Select) ========= */
+.Select-control{
+  border-radius: 0 !important;
+  border: 0 solid !important;
+  height: 65px;
+  color: #8F8F9E;
+}
+.Select-value{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.is-open > .Select-control{
+  color: #6FFCEF;
+  opacity: 1;
+}
+
+.Select-arrow{
+  border-color: #ffffff transparent transparent;
+  border-style: solid;
+  border-width: 5px 5px 2.5px;
+  height: 0;
+  width: 0;
+  position: relative;
+  color: #fff;
+  --accent: var(--topbar);
+}
+
+.Select-menu-outer{
+  --accent: var(--topbar);
+  display: block !important;
+}
+
+/* We need some space above and below of system dropdown. */
+div#system{
+  padding-top: 20px;
+  padding-bottom: 30px;
+}
+
+/* ========= File Dropdown ========= */
+.file_dropdown{
+  padding: 0;
+  width: 400px;
+  height: var(--h-control) !important;
+  display: inline-block;
+}
+.file_dropdown .Select-control{ height: var(--h-control) !important; }
+.file_dropdown .Select-value{
+  background-color: #F9F9F9;
+  font-size: 16px;
+  padding: 2px;
+  height: var(--h-control) !important;
+}
+
+.dropdownLabel{
+  width: 150px;
+  color: var(--accent);
+  padding-left: 20px;
+}
+
+/* ========= Role / Plant / User dropdown blocks ========= */
+.role_dropdown,
+.plant_dropdown,
+.user_dropdown{
+  padding: 0;
+  height: var(--h-control) !important;
+}
+.role_dropdown,
+.plant_dropdown{ width: 12rem; }
+.role_dropdown{ flex: 0 0 auto; }
+
+/* select value appearance */
+.role_dropdown .Select-value,
+.plant_dropdown .Select-value{
+  background-color: #1B1A39;
+  color: #fff !important;
+  font-weight: 500;
+  font-size: 20px;
+  padding: 2px;
+  height: var(--h-control) !important;
+}
+.plant_dropdown .Select-control,
+.user_dropdown .Select-control{
+  height: var(--h-control) !important;
+}
+
+/* dropdown button appearance */
+.plant_dropdown button,
+.user_dropdown button,
+.role_dropdown button{
+  width: 100%;
+  height: var(--h-control);
+  border-radius: 0;
+  border: 0;
+  background-color: var(--text);
+}
+.user_dropdown button{
+  align-items: center;
+  vertical-align: middle;
+  display: inline-flex;
+}
+.plant_dropdown button:hover,
+.user_dropdown button:hover,
+.role_dropdown button:hover{
+  background-color: var(--hover);
+  color: #fff;
+}
+
+/* selected label color override */
+.has-value.Select--single > .Select-control .Select-value .Select-value-label{
+  color: #000 !important;
+}
+
+/* ========= Calendar Shortcuts ========= */
+.DayPickerKeyboardShortcuts_buttonReset:active{ outline: 0; display: none; }
+.DayPickerKeyboardShortcuts_show__bottomRight{ bottom: 0; right: 0; display: none; }
+
+/* ========= DateRangePicker / DateInput ========= */
+.DateRangePicker{ border: none; }
+
+.DateRangePickerInput{
+  background-color: var(--topbar);
+}
+.DateRangePickerInput__withBorder{
+  border-radius: 0;
+  border: 0 solid #dbdbdb;
+}
+.DateRangePickerInput_arrow{ color: #fff; }
+.DateRangePickerInput_arrow_svg{
+  vertical-align: middle;
+  fill: #fff;
+  height: 24px;
+  width: 24px;
+}
+
+.DateInput{
+  margin: 0;
+  padding: 0;
+  background: var(--text);
+  position: relative;
+  display: inline-block;
+  width: 130px;
+  vertical-align: middle;
+  color: #fff;
+  border: none;
+}
+.DateInput_input__focused{
+  outline: 0;
+  background: var(--text);
+  border: 0;
+}
+
+/* Keep ONLY the final (winning) DateInput_input styling */
+.DateInput_input,
+.DateInput_input_1{
+  height: 48px !important;
+  font-size: 1.1em !important;
+  background-color: #f0f8ff !important;
+  border: 2px solid #0074D9 !important;
+  color: #fff;
+}
+.DateInput_input:focus,
+.DateInput_input_1:focus{
+  border-color: #FF4136 !important;
+  box-shadow: 0 0 0 2px rgba(255,65,54,0.3) !important;
+}
+
+/* Selected / hovered days (final winning versions) */
+.CalendarDay__selected,
+.CalendarDay__selected:active,
+.CalendarDay__selected:hover{
+  background: #FFDC00 !important;
+  color: #001f3f !important;
+}
+.CalendarDay__hovered_span{
+  background: #FF851B !important;
+}
+
+/* Dash datepicker wrapper */
+.dash-datepicker{
+  background-color: var(--topbar);
+  padding: 12px;
+  color: #fff;
+  width: 3cm;
+  accent-color: var(--sidebar);
+  outline-color: var(--sidebar);
+}
+.date-picker-wrapper div{ color: #fff !important; }
+#date-picker-wrapper > svg.dash-datepicker-range-arrow{ color: #fff; }
+.dash-datepicker-input{ color: #fff; }
+
+/* Remove ALL focus effects in date-picker wrapper */
+.date-picker-wrapper .DateInput_input:focus,
+.date-picker-wrapper .DateInput:focus-within,
+.date-picker-wrapper .DateInput,
+.date-picker-wrapper .DateInput_input{
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* ========= Settings Form ========= */
+#settings_form{
+  margin-left: 30px;
+  width: 30%;
+}
+#settings_form div{ padding: 20px; }
+
+#settings_form input[type=text],
+#settings_form input[type=password]{
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0 20px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+#settings_form button{
+  width: 100%;
+  float: left;
+  margin-bottom: 10px;
+  background-color: var(--accent);
+  color: #fff;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#settings_form button:hover{ background-color: #13866b; }
+
+/* Settings footer button */
+.settings_style{
+  text-align: center;
+  height: var(--h-topbar);
+  align-items: center;
+  vertical-align: middle;
+  padding-left: 40px;
+  display: inline-flex;
+  width: 100%;
+  background-color: var(--sidebar);
+  color: #fff;
+  border: 0;
+  position: absolute;
+  bottom: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+summary::marker{ color: var(--accent); }
+
+/* ========= Utility ========= */
+.flex_end_div{
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ========= Action Buttons ========= */
+.configure_button,
+.llm_button,
+.reload_button{
+  align-items: center;
+  vertical-align: middle;
+  justify-content: left;
+  display: inline-flex;
+  float: right;
+  border: none;
+  background-color: transparent;
+  margin-top: 20px;
+  color: #000;
+  opacity: 0.7;
+  padding: 12px;
+  border-radius: 0;
+}
+.reload_button:hover{
+  background-color: var(--hover);
+  color: #fff;
+}
+
+.reevaluate_button{
+  border: none;
+  border-radius: 0;
+  background-color: #1B1A39;
+  color: #fff;
+}
+.delete_button{
+  background-color: red;
+  color: #fff;
+  opacity: 0.7;
+}
+
+/* ========= Modal ========= */
+.modal-content{
+  display: block !important;
+  position: fixed !important;
+  width: 80% !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 2000 !important;
+  background-color: #ffffff !important;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-backdrop.show{
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  opacity: 1 !important;
+}
+
+.modal-content.modal.show{
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  width: 100% !important;
+}
+
+.modal-row{ display: flex; }
+.modal-content input{ flex: 30%; }
+.modal-content label{ flex: 70%; }
+
+.configure-apply,
+.configure-close{
+  display: flex;
+  border-width: 0;
+}
+
+.configure-apply{
+  color: var(--text);
+  background-color: var(--accent);
+}
+.configure-apply:hover{
+  color: var(--text);
+  background-color: #B1C800;
+  border-color: gray;
+}
+
+.configure-close{
+  background-color: gray;
+  color: #000;
+}
+.configure-close:hover{
+  background-color: var(--accent);
+  color: var(--text);
+  border-color: gray;
+}
+
+/* ========= Login ========= */
+.login-form{
+  background-color: #fff;
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px 40px 40px 40px;
+  border-radius: 20px;
+}
+.login-form *{
+  font-size: medium;
+  color: #1B1A39;
+}
+.login-form div{
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.login-form .logo-div{
+  width: 20%;
+  flex-grow: 0;
+  flex-shrink: 0;
+  height: var(--h-topbar);
+  padding-left: 40%;
+  padding-right: 40%;
+}
+.logo-div .logo{
+  width: 100%;
+  padding-left: 0;
+  padding-right: 0;
+}
+.logo-div h3{ color: #1B1A39; }
+
+.login-form button{
+  width: 10rem;
+  display: block;
+  float: right;
+  text-align: center;
+  border-radius: 10px;
+  height: 2.5rem;
+  background-color: var(--topbar);
+  color: #fff;
+  align-items: center;
+  border-width: 0;
+  align-content: center;
+  padding: 0;
+  margin-top: 10px;
+}
+.login-form label{ font-size: small; }
+
+.login-form input{
+  border-radius: 10px;
+  height: 2.5rem;
+  text-indent: 10px;
+  width: 100%;
+  border-width: 0;
+}
+.login-form select{
+  height: 2.5rem;
+  border-radius: 10px;
+  text-indent: 3px;
+  background-color: rgb(232, 240, 254);
+  width: 100%;
+  border-width: 0;
+}
+.login-form .title{ font-size: x-large; }
+
+.logo-login{
+  width: 10rem;
+  position: absolute;
+  transform: translate(50%, -165%);
+}
+
+a.dropdown-item{
+  align-items: center;
+  vertical-align: middle;
+  display: inline-flex;
+}
+
+.notification{ color: red; }
+
+/* ========= Dash table accent vars ========= */
+.Select-menu-outer{ --accent: var(--topbar); } /* keep */
+.dash-delete-cell{ --accent: var(--topbar); }
+.column-header--edit{ --accent: var(--topbar); }
+.column-header--delete{ --accent: var(--topbar); }
+
+/* Hide spreadsheet menu button */
+#disturbances-table > div.dash-spreadsheet-menu > div.dash-spreadsheet-menu-item > button{
+  display: none;
+}
+
+/* ========= Panel ========= */
+.selfx_panel{
+  box-shadow: 0px 3px 35px #1B1A390A;
+  border: 2px solid #F3F4F6;
+  border-radius: 15px;
+  display: inline-block;
+  width: 100%;
+  padding: 10px;
+  whiteSpace: normal;
+  height: auto;
+  margin: 7px;
+}
+
+.light_label{
+  color: #8F8F9E;
+  font-size: medium;
+  font-weight: normal;
+}
