@@ -21,6 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Copy README to docs index
+        run: cp README.md docs/index.md
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
