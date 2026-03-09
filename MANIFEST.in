@@ -1,2 +1,8 @@
+include README.md
 include LICENSE
-include requirements/*.txt
+
+recursive-include selfx *.py
+recursive-include requirements *.txt
+
+global-exclude *.py[cod]
+global-exclude __pycache__
