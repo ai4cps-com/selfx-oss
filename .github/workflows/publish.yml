@@ -13,13 +13,6 @@ jobs:
     steps:    
       - name: Check out source
         uses: actions/checkout@v4
-
-      - name: Debug locate version.py
-        run: |
-          pwd
-          ls -la
-          ls -la selfx || true
-          find . -maxdepth 4 -type f -name "install.txt" -print || true
       
       - name: Set up Python
         uses: actions/setup-python@v5
