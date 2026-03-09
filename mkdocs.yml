@@ -3,6 +3,13 @@ site_url: https://selfx.ai4cps.com
 repo_url: https://github.com/ai4cps-com/selfx-oss
 repo_name: ai4cps-com/selfx-oss
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+
 theme:
   name: material
 
@@ -10,7 +17,7 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Installation: installation.md
-  - API: api.md
+  - API Reference: api.md
 
 markdown_extensions:
   - admonition
