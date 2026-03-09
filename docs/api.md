@@ -11,10 +11,3 @@
 
 ::: selfx.backend.utils
 
-## Backend Features
-
-::: selfx.backend.features
-
-## Backend Results
-
-::: selfx.backend.results
