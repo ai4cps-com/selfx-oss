@@ -2,8 +2,11 @@ import io
 import os
 from setuptools import setup, find_packages
 
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
 main_ns = {}
-exec(open("selfx/version.py", encoding="utf-8").read(), main_ns) # pylint: disable=exec-used, consider-using-with
+exec((BASE_DIR / "selfx" / "version.py").read_text(encoding="utf-8"), main_ns) # pylint: disable=exec-used, consider-using-with
 
 def read_req_file(req_type):
     with open(os.path.join("requirements", f"{req_type}.txt"), encoding="utf-8") as fp:
