@@ -1,11 +1,5 @@
 # Getting Started
 
-## Install
-
-```bash
-pip install selfx
-```
-
 ## Basic usage
 ```python
 from selfx.dash.dashboard import SelfXDash
