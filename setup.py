@@ -1,7 +1,6 @@
 import io
 import os
 from setuptools import setup, find_packages
-
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
