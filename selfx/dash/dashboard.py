@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import datetime
 import logging
 import shutil
 import warnings
@@ -16,8 +15,9 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import dash
 import dash_bootstrap_components as dbc
+import numpy as np
 import pandas as pd
-from celery import chain
+from celery import chain, Celery
 from celery.schedules import schedule
 from dash import dash_table, dcc, html
 from dash.dependencies import Input, Output, State
@@ -25,13 +25,12 @@ from dash.exceptions import PreventUpdate
 from flask import redirect, request
 
 from selfx.backend.features import AnalysisManager, get_analysis_intervals
-from selfx.backend.perform import get_sorted_features, perform_requested_features
-from selfx.backend.results import delete_files
+from selfx.backend.perform import get_sorted_features, perform_requested_features, get_requested_features
+from selfx.backend.results import delete_files, get_result, is_stored
 from selfx.dash import colors
 from selfx.dash.routing_utils import construct_id, parse_url, construct_url, get_today
 
 from selfx.dash.layouts import get_sidebar, get_topbar
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,24 +58,21 @@ class SelfXDash:
     ROUTE_PREFIX = "/dashboard/"
     TITLE = "SelfX"
 
+
     def __init__(
         self,
         roles: Optional[Sequence[Any]] = None,
         users: Optional[Sequence[Any]] = None,
-        celery_app: Any = None,
         config: Any = None,
         work_day_shift: int = 0,
         initial_date: Any = None,
         logo: Optional[Union[str, Sequence[str]]] = None,
         analysis_period: int = 60,
-        content_not_ready_refresh_interval: int = 3,
-        LOCK_KEY: str = "selfx_celery_task_lock",
-        LOCK_TTL: int = 60,
+        content_not_ready_refresh_interval: int = 0.5
     ) -> None:
         # ---- Inputs / config ----
         self.roles = tuple(roles) if roles is not None else ()
         self.users = tuple(users) if users is not None else ()
-        self.celery_app = celery_app
         self.config = config
         self.logo = logo
         self.initial_date = initial_date
@@ -84,9 +80,6 @@ class SelfXDash:
         self.work_day_shift = work_day_shift
         self.analysis_period = analysis_period
         self.content_not_ready_refresh_interval = content_not_ready_refresh_interval
-
-        self.grafana_url = grafana_url
-        self.grafana_token = grafana_token
 
         # ---- Internal registries / state ----
         self.unified: Dict[str, Any] = {}
@@ -99,8 +92,7 @@ class SelfXDash:
         self.settings: Dict[str, Any] = {}
         self.preferences: Dict[str, Any] = {}
 
-        self.LOCK_KEY = LOCK_KEY
-        self.TTL = TTL
+        self.celery_app = create_celery_app()
 
         # ---- Dash app ----
         self.app = dash.Dash(
@@ -114,8 +106,6 @@ class SelfXDash:
         )
 
         # ---- Component registries / stores ----
-        self.file_load: Dict[str, Any] = {}
-        self.dropdown_items: Dict[str, Any] = {}
         self.date_picker: Dict[str, Any] = {}
         self.refresh: Dict[str, Any] = {}
         self.session_store: Dict[str, Any] = {}
@@ -131,10 +121,8 @@ class SelfXDash:
         unified: Union[bool, str] = True,
         settings: Union[bool, str] = False,
         preferences: Union[bool, str] = False,
-        file_dropdown: Any = None,
         refresh: bool = False,
-        freq: str = "1h",
-        file_load: bool = False,
+        freq: str = "1h"
     ) -> None:
         """
         Register a system/plant in the dashboard and wire up feature callbacks.
@@ -174,8 +162,6 @@ class SelfXDash:
         self.features[name] = features_nested
 
         # registries
-        self.file_load[name] = file_load
-        self.dropdown_items[name] = file_dropdown
         self.refresh[name] = refresh
         self.analysis[name] = AnalysisManager(freq=freq)
         self._feature_obj[name] = {}
@@ -219,7 +205,7 @@ class SelfXDash:
         self._register_routing_callbacks()
 
     def run(self, port: int = 8050, debug: bool = False, host: str = "0.0.0.0", **kwargs) -> None:
-        self.register_celery_tasks(LOCK_KEY=self.LOCK_KEY, LOCK_TTL=self.LOCK_TTL)
+        self.register_celery_tasks()
         self._initialize_server()
         self.app.run(host=host, port=port, debug=debug, **kwargs)
 
@@ -227,7 +213,9 @@ class SelfXDash:
     # Callback registration
     # -------------------------
     def _register_routing_callbacks(self) -> None:
+
         self._register_update_pathname_callback()
+        self._register_content_content()
         self._register_render_page_callback()
 
     def _register_update_pathname_callback(self) -> None:
@@ -307,6 +295,191 @@ class SelfXDash:
 
             perform_requested_features(self._feature_obj[system], self.celery_app, feature, system, start, end)
             return topbar_layout, sidebar_layout, self._content_container()
+
+    def _register_content_content(self):
+        @self.app.callback(Output(construct_id("contentcontent"), "children"),
+                           Output(construct_id('content', 'interval'), "disabled"),
+                           Output(construct_id('content', 'interval'), "max_intervals"),
+                           Input(construct_id('content', 'interval'), "n_intervals"),
+                           State(construct_id("url"), "pathname"),
+                           State(construct_id('content', 'interval'), "max_intervals"))
+        def render_page_content(n_intervals, pathname, max_intervals):
+            print(f"**** Visualizing results {n_intervals} / {max_intervals} ****")
+            system, role, feature, start, end = parse_url(pathname)
+
+            feature_object = self._feature_obj[system][feature]
+            if feature_object.is_online(role):
+                start = None
+                end = None
+                res = get_result(f'Online/{feature}.joblib')
+                res = {'Online': {feature: res}}
+                content = feature_object.layout(role, res, start, end)
+            else:
+                exist_features = self.exist_requested_features(feature, system, start, end)
+                style_data_conditional = []
+                for col in exist_features.columns:
+                    style_data_conditional += [
+                        {
+                            "if": {
+                                "filter_query": f"{{{col}}} = 1",
+                                "column_id": col
+                            },
+                            "backgroundColor": "lightgreen",
+                            "color": "black"
+                        },
+                        {
+                            "if": {
+                                "filter_query": f"{{{col}}} = 0",
+                                "column_id": col
+                            },
+                            "backgroundColor": "khaki",
+                            "color": "black"
+                        },
+                        {
+                            "if": {
+                                "filter_query": f"{{{col}}} != 1 && {{{col}}} != 0",
+                                "column_id": col
+                            },
+                            "backgroundColor": "lightcoral",
+                            "color": "black"
+                        }
+                    ]
+                if not max_intervals or max_intervals <= 0 or n_intervals < max_intervals:
+                    if exist_features.all().all():
+                        return html.Div(children=[html.Br(),
+                                                  "Analysis finished.",
+                                                  html.Br()]), False, n_intervals + 1
+                    else:
+                        print("**** Features not ready")
+
+                        features_status = editable_table(exist_features.reset_index(),
+                                                         style_data_conditional=style_data_conditional)
+                        return html.Div(children=[html.Br(), html.Br(), html.Br(), dcc.Loading(),
+                                                  f"Waiting for the analysis: "
+                                                  f"{n_intervals * self.content_not_ready_refresh_interval}s",
+                                                  html.Br(), features_status]), False, -1
+                else:
+                    try:
+                        feature_object = self._feature_obj[system][feature]
+
+                        res, failed_res = get_requested_features(self, feature, system, start, end)
+
+                        if res is None or failed_res:
+                            for failed_k, failed_v in failed_res.items():
+                                exist_features.loc[failed_k, list(failed_v.keys())] = -1
+                            features_status = editable_table(exist_features.reset_index(),
+                                                             style_data_conditional=style_data_conditional)
+                            return html.Div(children=[html.Br(),
+                                                      f"Failed analysis: "
+                                                      f"{n_intervals * self.content_not_ready_refresh_interval}s",
+                                                      features_status]), True, n_intervals + 1
+                        elif max_intervals == n_intervals:
+                            try:
+                                print(f'Creating layout started for {feature_object}')
+                                content = feature_object.layout(role, res, start, end)
+                                print('Creating layout finished')
+                            except:
+                                print_exc()
+                                return error_content(f"Problem executing feature: {feature}", pathname), True, -1
+                        else:
+                            return html.Div(children=[html.Br(),
+                                                      f"{self.translate[system]('Analysis finished.')}",
+                                                      html.Br()]), False, n_intervals + 1
+                    except TypeError as te:
+                        print(f'TypeError')
+                        print_exc()
+                        return error_content(f"Problem executing feature: {feature}", pathname), True, -1
+
+            if content is None:
+                return error_content(f"Problem executing feature: {feature}", pathname), True, -1
+            elif type(content) is tuple:
+                content, tool_title = content
+            else:
+                tool_title = feature
+
+            # CREATING UI
+            name = system
+            tool_config = feature_object.config
+            if tool_config is not None:
+                par_labels = [html.Label(p['label']) for cfg_id, p in tool_config.items()]
+                par_inputs = [dcc.Input(id=construct_id(name, feature, cfg_id), type=p["type"], value=p["value"])
+                              for cfg_id, p in tool_config.items()]
+                par_form = []
+                for i in range(len(par_labels)):
+                    par_form.append(html.Div(children=[par_labels[i], par_inputs[i]], className='modal-row'))
+
+                modal = dbc.Modal([
+                    dbc.ModalHeader("Configure"),
+                    dbc.ModalBody(par_form + [dbc.ModalFooter(
+                        [dbc.Button("Cancel", id=construct_id(name, feature, "close"),
+                                    className="configure-close"),
+                         dbc.Button("Apply", id=construct_id(name, feature, "configure-apply"),
+                                    className="configure-apply")])])],
+                    id=construct_id(name, feature, "modal"), className='modal-content', is_open=False)
+
+                llm_text = ''
+                if res:
+                    for k, r in res.items():
+                        llm_text = r[feature].get('llm', 'No result')
+                        if llm_text is None:
+                            llm_text = 'No result'
+                        llm_text += str(k) + ': ' + llm_text + '\n'
+
+                modalllm = dbc.Modal([
+                    dbc.ModalHeader("LLM"),
+                    dbc.ModalBody(
+                        [dbc.Textarea(id='llm-result', disabled=True, value=llm_text, style={'height': '400px'})] +
+                        [dbc.ModalFooter(
+                            [dbc.Button("Close", id=construct_id(name, feature, "close-llm"),
+                                        className="configure-close")])])],
+                    id=construct_id(name, feature, "modal-llm"), className='modal-content', is_open=False)
+
+                config_reload_buttons = [
+                    html.Button(className="configure_button",
+                                id=construct_id(name, feature, "configure"),
+                                children=[html.I('build_circle', className="material-icons"),
+                                          'Configure']),
+                    dbc.Button(className="reload_button",
+                               id=construct_id(name, feature, "reload"),
+                               children=[html.I('refresh', className="material-icons"),
+                                         'Reload'],
+                               href="javascript:window.location.reload(true)"),
+                    html.Button(className="llm_button",
+                                id=construct_id(name, feature, "llm"),
+                                children=[html.I('article', className="material-icons"),
+                                          'LLM'])
+                ]
+            else:
+                modalllm = None
+                modal = None
+                config_reload_buttons = []
+            content = html.Div(children=[modal, modalllm,
+                                         html.Div(tool_title, className="content_title_style"),
+                                         *config_reload_buttons,
+                                         html.Div(content)])
+            return content, True, -1
+
+    def exist_requested_features(self, feature, system, start, finish):
+        features_to_get = list(self._feature_obj[system][feature].required_features)
+        if features_to_get is None:
+            features_to_get = [feature]
+        else:
+            features_to_get.append(feature)
+
+        try:
+            intervals = get_analysis_intervals(start, finish)
+            results = pd.DataFrame(np.nan, index=intervals.keys(), columns=features_to_get)
+
+            for k, interv in intervals.items():
+                features_to_get = [f"{system}#{f}" for f in features_to_get]
+                for f in features_to_get:
+                    success_f = is_stored(k, f)
+                    results.loc[k, f] = float(success_f)
+
+            return results
+        except Exception as ex:
+            print_exc()
+            return None
 
     def _register_feature_modals(self, system_name: str, tool: str, feature_object: Any) -> None:
         """Register config + LLM modal toggles for a single feature."""
@@ -407,7 +580,7 @@ class SelfXDash:
             obj = self._feature_obj[system][feature]
             return bool(obj.time_range_selection(role))
         except Exception:
-            return True
+            return False
 
     def _resolve_feature(self, system: str, role: str, feature: str) -> Optional[str]:
         if feature:
@@ -428,7 +601,7 @@ class SelfXDash:
     # -------------------------
     # Celery integration
     # -------------------------
-    def register_celery_tasks(self, LOCK_KEY, LOCK_TTL):
+    def register_celery_tasks(self):
         """
         Register feature tasks and (optionally) create a locked periodic chain executor.
 
@@ -436,63 +609,51 @@ class SelfXDash:
             {plant_name: {role: [(cls, mdl), ...], ...}, ...}
         """
 
+
         for plant_name, features in self._feature_obj.items():
-            registered: set[Tuple[str, str]] = set()
+            registered = set()
             periodic_objs: List[Any] = []
             all_objs: Dict[str, Any] = {}
 
-            for user, feat in self._feature_obj.items():
-                for cls, mdl in feat:
-                    key = (mdl, cls)
-                    if key in registered:
-                        continue
+            for feat_name, obj in features.items():
+                if feat_name in registered:
+                    continue
+                try:
+                    obj.name = f"{plant_name}#{obj.feature_name()}"
+                    self.celery_app.register_task(obj)
+                    registered.add(feat_name)
 
-                    try:
-                        obj.name = plant_name + obj.feature_name()
-                        self.app.register_task(obj)
-                        registered.add(key)
+                    if getattr(obj, "periodic", False):
+                        periodic_objs.append(obj)
 
-                        if getattr(obj, "periodic", False):
-                            periodic_objs.append(obj)
+                    all_objs[obj.feature_name()] = obj
+                except Exception:
+                    logger.warning("Feature not available: %s", feat_name)
+                    print_exc()
 
-                        all_objs[obj.feature_name()] = obj
-                    except Exception:
-                        logger.warning("Feature not available: %s.%s", mdl, cls)
-                        print_exc()
-
-            if periodic_objs and ANALYSIS_IDLE_PERIOD is not None:
-                sorted_features = [(x, all_objs[x]) for x in get_sorted_features(periodic_objs)]
-
-                if "celery_app.run_feature_chain" not in app.tasks:
-
-                    @app.task(name="celery_app.run_feature_chain")
-                    def run_feature_chain():
-                        lock_acquired = redis_client.set(
-                            LOCK_KEY,
-                            "1",
-                            nx=True,  # only set if not exists
-                            ex=LOCK_TTL,  # auto-expire safety
-                        )
-                        if not lock_acquired:
-                            logger.info("Previous chain still running -> skipping")
-                            return
-
-                        try:
-                            chain_tasks = [app.tasks[v.name].si(None, None) for (_, v) in sorted_features]
-                            chain_tasks.append(app.tasks["tasks.release_lock"].s())
-                            chain(*chain_tasks).apply_async()
-                        except Exception:
-                            redis_client.delete(LOCK_KEY)
-                            raise
-
-                app.conf.beat_schedule = {
-                    "run-feature-chain": {
-                        "task": "celery_app.run_feature_chain",
-                        "schedule": schedule(datetime.timedelta(seconds=ANALYSIS_IDLE_PERIOD)),
-                    },
-                }
-            else:
-                logger.info("No periodic analysis of %s...", plant_name)
+            # if periodic_objs and ANALYSIS_IDLE_PERIOD is not None:
+            #     sorted_features = [(x, all_objs[x]) for x in get_sorted_features(periodic_objs)]
+            #
+            #     if "celery_app.run_feature_chain" not in app.tasks:
+            #
+            #         @app.task(name="celery_app.run_feature_chain")
+            #         def run_feature_chain():
+            #             try:
+            #                 chain_tasks = [app.tasks[v.name].si(None, None) for (_, v) in sorted_features]
+            #                 chain_tasks.append(app.tasks["tasks.release_lock"].s())
+            #                 chain(*chain_tasks).apply_async()
+            #             except Exception:
+            #                 redis_client.delete(LOCK_KEY)
+            #                 raise
+            #
+            #     app.conf.beat_schedule = {
+            #         "run-feature-chain": {
+            #             "task": "celery_app.run_feature_chain",
+            #             "schedule": schedule(datetime.timedelta(seconds=ANALYSIS_IDLE_PERIOD)),
+            #         },
+            #     }
+            # else:
+            #     logger.info("No periodic analysis of %s...", plant_name)
 
 
 # -------------------------
@@ -633,4 +794,9 @@ def get_modal(modal_id: str, title: str = "Notification", button: bool = True, b
         is_open=False,
     )
 
+def create_celery_app() -> Celery:
+    app = Celery("selfx")
+    app.config_from_object("selfx.backend.celery_config")
+    # app.autodiscover_tasks(["selfx.tasks"])
+    return app
 

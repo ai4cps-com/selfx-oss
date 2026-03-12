@@ -1,6 +1,4 @@
 """
-analysis.py
-
 Core abstractions for running feature computations and retrieving stored
 analysis results.
 
@@ -55,10 +53,10 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 import pandas as pd
 import requests
-from celery import Task
+from celery import Task, Celery
 
 from selfx.backend import datetime_utils
-from selfx.backend.results import get_result, get_results, store_result
+from selfx.backend import results
 from selfx.backend.utils import make_valid_filename
 
 
@@ -151,8 +149,8 @@ class Feature(Task):
     fetching : bool
         Whether this feature represents a data-fetching task.
     """
-
-    required_features: List[str] = []
+    abstract = True
+    required_features: tuple[str] = ()
 
     @classmethod
     def feature_name(cls) -> str:
@@ -186,6 +184,35 @@ class Feature(Task):
         self.color_mapping: Any = None
         self.periodic = periodic
         self.fetching = fetching
+
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+
+        rf = getattr(cls, "required_features", ())
+
+        if cls.__name__ in rf:
+            raise ValueError(f"{cls.__name__} cannot depend on itself")
+
+        if rf is None:
+            rf = ()
+
+        if isinstance(rf, list):
+            rf = tuple(rf)
+
+        if isinstance(rf, str):
+            rf = (rf, )
+
+        if not isinstance(rf, tuple):
+            raise TypeError(
+                f"{cls.__name__}.required_features must be a tuple[str, ...]"
+            )
+
+        if not all(isinstance(x, str) for x in rf):
+            raise TypeError(
+                f"{cls.__name__}.required_features must contain only strings"
+            )
+
+        cls.required_features = rf
 
     def layout(self, role: Any, analysis: Any, start: Any, end: Any) -> Any:
         """
@@ -231,7 +258,10 @@ class Feature(Task):
             Stored result object, ``{}`` if missing, or ``None`` if loading
             fails.
         """
-        feature_name = feature or self.feature_name()
+        if feature:
+            feature_name = f"{self.plant_name}#{feature}"
+        else:
+            feature_name = self.name
 
         if sel_date is None or sel_date == "Online":
             interval_key = "Online"
@@ -241,12 +271,10 @@ class Feature(Task):
             interval_key = make_valid_filename(datetime_utils.dt_to_str_till_sec(ts))
 
         identifier = f"{interval_key}/{feature_name}.joblib"
-
         try:
-            return get_result(identifier)
+            return results.get_result(identifier)
         except Exception:
-            logging.warning("Could not load stored result for %s", identifier, exc_info=True)
-            return {}
+            raise Exception(f"Could not load stored result for {identifier}")
 
     def __repr__(self) -> str:
         """
@@ -280,7 +308,7 @@ class Feature(Task):
         -----
         Subclasses should override this method.
         """
-        raise NotImplementedError
+        pass
 
     def llm_prompt(self, result: Mapping[str, Any]) -> Optional[str]:
         """
@@ -339,9 +367,9 @@ class Feature(Task):
         Returns
         -------
         bool
-            ``True`` if time-range selection is supported.
+            ``False`` if time-range selection is supported.
         """
-        return True
+        return False
 
     def is_online(self, role: Any) -> bool:
         """
@@ -422,7 +450,7 @@ class Feature(Task):
         Exception
             Re-raises any exception from ``perform(...)`` after logging.
         """
-        logging.info("Running feature %s for %s - %s", self.feature_name(), start_iso, finish_iso)
+        logging.info("Running feature %s for %s - %s", self.name, start_iso, finish_iso)
 
         start = pd.Timestamp(start_iso) if start_iso is not None else None
         finish = pd.Timestamp(finish_iso) if finish_iso is not None else None
@@ -434,7 +462,7 @@ class Feature(Task):
 
             result["llm"] = self._generate_llm_summary(result)
 
-            store_result(start, self.feature_name(), result)
+            results.store_result(start, self.name, result)
             return True
 
         except Exception:
@@ -533,8 +561,8 @@ class AnalysisManager:
         """
         try:
             if feature is None:
-                return get_results(interval_key)
-            return get_result(f"{interval_key}/{feature}.joblib")
+                return results.get_results(interval_key)
+            return results.get_result(f"{interval_key}/{feature}.joblib")
         except Exception:
             print_exc()
             return None
@@ -594,7 +622,7 @@ class AnalysisManager:
         missing: List[Tuple[pd.Timestamp, pd.Timestamp]] = []
         for interval_start, interval_end in zip(boundaries[:-1], boundaries[1:]):
             interval_key = _interval_key(interval_start)
-            stored = get_results(interval_key)
+            stored = results.get_results(interval_key)
             if not stored:
                 missing.append((interval_start, interval_end))
 
@@ -665,10 +693,3 @@ def get_analysis_intervals(start: Any, finish: Any) -> Dict[str, Tuple[Optional[
         for day in all_days
     }
 
-
-if __name__ == "__main__":
-    manager = AnalysisManager("1h")
-    missing = manager.get_non_analyzed_intervals("2023-08-14", "2023-08-15")
-    for interval in missing:
-        print(interval)
-    print("Finished")

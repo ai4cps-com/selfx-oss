@@ -35,6 +35,8 @@ Notes
 
 from __future__ import annotations
 
+import os
+import warnings
 from pathlib import Path
 from traceback import print_exc
 from typing import Any, Dict, Iterable, Optional
@@ -129,7 +131,16 @@ def store_result(interval: Optional[Any], feature: str, result: Any) -> None:
     prefix = _interval_to_prefix(interval)
     out_dir = DEFAULT_RESULTS_DIR / prefix
     out_dir.mkdir(parents=True, exist_ok=True)
-    joblib.dump(result, out_dir / f"{feature}.joblib", compress=False)
+    path = out_dir / f"{feature}.joblib"
+    tmp_path = path.with_suffix(".joblib.tmp")
+
+    try:
+        joblib.dump(result, tmp_path, compress=False)
+        os.replace(tmp_path, path)  # atomic rename
+    except Exception:
+        if tmp_path.exists():
+            tmp_path.unlink()  # clean partial file
+        raise
 
 
 def get_result(identifier: str) -> Any:
@@ -163,8 +174,9 @@ def get_result(identifier: str) -> Any:
     try:
         return joblib.load(filename=file_path, mmap_mode=None)
     except Exception:
+        warnings.warn(f"Loading result from {file_path} has failed.")
         print_exc()
-        return None
+        return {}
 
 
 def is_stored(interval: str, feature: str) -> bool:

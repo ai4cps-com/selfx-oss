@@ -12,7 +12,7 @@ class Feature1(Feature):
         return 'home'
 
 class Feature2(Feature):
-    required_features = ["Feature1"]
+    required_features = "Feature1"
 
     def perform(self, start, end):
         return 2
@@ -24,6 +24,6 @@ class Feature2(Feature):
         return 'bar_chart'
 
 app = SelfXDash()
-app.add_system('System 1', features=[Feature1, Feature2])
+app.add_system('Tiny', features=[Feature1, Feature2])
 
 app.run(port=8050, host="127.0.0.1")

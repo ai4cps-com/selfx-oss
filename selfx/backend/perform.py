@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from selfx.backend.features import get_analysis_intervals
-from selfx.backend.results import is_stored, get_result
+from selfx.backend import results
 
 
 def run_tasks(tasks: Sequence[str], celery_app: Any, interv: Sequence[Any]) -> None:
@@ -55,45 +55,43 @@ def exist_requested_features(self, feature, system, start, finish):
 
     try:
         intervals = get_analysis_intervals(start, finish)
-        results = pd.DataFrame(np.nan, index=intervals.keys(), columns=features_to_get)
+        df_results = pd.DataFrame(np.nan, index=intervals.keys(), columns=features_to_get)
 
         for k, interv in intervals.items():
             for f in features_to_get:
-                success_f = is_stored(k, f)
-                results.loc[k, f] = float(success_f)
+                success_f = results.is_stored(k, f)
+                df_results.loc[k, f] = float(success_f)
 
-        return results
+        return df_results
     except Exception as ex:
         print_exc()
         return None
 
 def get_requested_features(self, feature, system, start, finish):
     f_objs = self._feature_obj[system]
-    print('Getting required features...')
 
-    required_features = []
+    features_to_get = [feature]
     if f_objs[feature].required_features:
-        required_features += f_objs[feature].required_features
-    features_to_get = [feature] + required_features
+        features_to_get += list(f_objs[feature].required_features)
 
     try:
         intervals = get_analysis_intervals(start, finish)
-        results = OrderedDict()
+        dict_results = OrderedDict()
         results_failed = OrderedDict()
 
         for k, interv in intervals.items():
             for f in features_to_get:
-                res = get_result(f'{k}/{f}.joblib')
+                res = results.get_result(f'{k}/{f}.joblib')
                 if res is None or ('status' in res and res['status'] == 'failed'):
                     if k not in results_failed:
                         results_failed[k] = {}
                     results_failed[k][f] = res
                 else:
-                    if k not in results:
-                        results[k] = {}
-                    results[k][f] = res
-        print('Finished getting required features...')
-        return results, results_failed
+                    if k not in dict_results:
+                        dict_results[k] = {}
+                    dict_results[k][f] = res
+        print('Finished getting requested features...')
+        return dict_results, results_failed
     except Exception as ex:
         print_exc()
         return None, None
@@ -111,22 +109,49 @@ def get_sorted_features(periodic_features):
     sorted_features = list(nx.topological_sort(graph))
     return sorted_features
 
-def get_required_features(feature, all_features):
+def get_required_features(selected_feature_name, all_features):
+    """
+    Return all dependencies for a selected feature in topological order.
+
+    The output includes the selected feature itself. Each dependency appears
+    before any feature that depends on it.
+
+    Args:
+        selected_feature_name (str): Target feature name.
+        all_features (dict[str, Feature]): Mapping of feature names to feature objects.
+
+    Returns:
+        list[str]: Dependency-ordered feature names.
+
+    Raises:
+        KeyError: If the selected feature or any required feature is missing.
+        ValueError: If a cyclic dependency is detected.
+    """
+    if selected_feature_name not in all_features:
+        raise KeyError(f"Selected feature '{selected_feature_name}' not in available features.")
+
     graph = nx.DiGraph()
+    stack = [selected_feature_name]
+    visited = set()
 
-    feature_name, feature_obj = feature
+    while stack:
+        feature_name = stack.pop()
+        if feature_name in visited:
+            continue
+        visited.add(feature_name)
 
-    parent_nodes = [feature_obj]
-    while parent_nodes:
-        feature = parent_nodes.pop()
-        if feature.required_features:
-            for rf in feature.required_features:
-                if rf not in all_features:
-                    raise Exception(f'Feature {rf} not in available features.')
-                graph.add_edge(rf, feature.feature_name())
-                parent_nodes.append(all_features[rf])
-        else:
-            graph.add_node(feature.feature_name())
+        feature = all_features[feature_name]
+        graph.add_node(feature_name)
+
+        for required_name in feature.required_features or []:
+            if required_name not in all_features:
+                raise KeyError(f"Required feature '{required_name}' not in available features.")
+            graph.add_edge(required_name, feature_name)
+            stack.append(required_name)
+
+    if not nx.is_directed_acyclic_graph(graph):
+        raise ValueError(f"Cyclic dependency detected for feature '{selected_feature_name}'.")
+
     return list(nx.topological_sort(graph))
 
 def perform_requested_features(feature_objects, celery_app, feature, system, start, finish):
@@ -144,8 +169,7 @@ def perform_requested_features(feature_objects, celery_app, feature, system, sta
         return
 
     f_objs = feature_objects
-    print('Performing requested features: ')
-    features_to_perform = get_required_features((feature, f_objs[feature]), f_objs)
+    features_to_perform = get_required_features(feature, f_objs)
     print('Features to perform: ', features_to_perform)
     try:
         intervals = get_analysis_intervals(start, finish)
@@ -154,8 +178,8 @@ def perform_requested_features(feature_objects, celery_app, feature, system, sta
         for k, interv in intervals.items():
             features_to_perform_tasks = []
             for f in features_to_perform:
-                f = system + f
-                if is_stored(k, f):
+                f = f"{system}#{f}"
+                if results.is_stored(k, f):
                     print(f"Skipping feature performing, it exists: {f} in {k}")
                     continue
                 else:
