@@ -27,6 +27,7 @@ markdown_extensions:
   - admonition
   - fenced_code
   - tables
+  - pymdownx.highlight
   - pymdownx.snippets
   - pymdownx.superfences
   - toc:
