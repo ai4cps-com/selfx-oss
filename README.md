@@ -18,7 +18,7 @@ Built on top of [Dash](https://dash.plotly.com/), SelfX allows simple implementa
 Read [our tutorial](https://selfx.ai4cps.com/getting-started). 
 
 This software is developed at [Helmut Schmidt University / University of Federal Armed Forces Hamburg](www.hsu-hh.de)
-at the [Professorship of Computer Science in Mechanical Engineering](https://www.hsu-hh.de/imb/en/)
+at the [Professorship of Computer Science in Mechanical Engineering](https://www.hsu.hamburg/imb/en/)
 at the Institute of Automation Technology.
 
 

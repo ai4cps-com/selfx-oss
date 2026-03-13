@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 import warnings
 from collections import OrderedDict
@@ -103,6 +104,7 @@ class SelfXDash:
             routes_pathname_prefix=self.ROUTE_PREFIX,
             requests_pathname_prefix=self.ROUTE_PREFIX,
             title=self.TITLE,
+            assets_folder=os.path.join(os.path.dirname(__file__), "assets"),
         )
 
         # ---- Component registries / stores ----

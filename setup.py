@@ -36,7 +36,7 @@ setup(
         "console_scripts": [],
         "pytest11": [],
     },
-    url="https://ai4cps.com/selfx",
+    url="https://selfx.ai4cps.com",
     project_urls={
         "Documentation": "https://selfx.ai4cps.com",
         "Source": "https://github.com/ai4cps-com/selfx-oss",
