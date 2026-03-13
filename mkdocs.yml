@@ -28,7 +28,9 @@ markdown_extensions:
   - fenced_code
   - tables
   - pymdownx.highlight
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path:
+        - .
   - pymdownx.superfences
   - toc:
       permalink: true
