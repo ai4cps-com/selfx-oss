@@ -1,6 +1,6 @@
 # Getting Started
 
-This section demonstrates how to run **SelfX** with simple examples.\
+This section demonstrates how to run **SelfX** with simple examples.
 Each example shows the minimal code required and the resulting dashboard
 output.
 
@@ -22,7 +22,7 @@ The following script demonstrates the smallest working SelfX setup.
 
 ------------------------------------------------------------------------
 
-## Conveyor Analysis Example
+## Conveyor Example
 
 This example shows a slightly more realistic scenario using conveyor
 data.
