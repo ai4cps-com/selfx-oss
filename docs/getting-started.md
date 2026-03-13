@@ -10,7 +10,8 @@ output.
 
 The following script demonstrates the smallest working SelfX setup.
 
-`python title="tiny_example.py" --8<-- "tests/tiny_example.py"`
+[//]: # (```python title="tiny_example.py" )
+--8<-- "tests/tiny_example.py"
 
 ### Result
 
@@ -23,7 +24,8 @@ The following script demonstrates the smallest working SelfX setup.
 This example shows a slightly more realistic scenario using conveyor
 data.
 
-`python title="conveyor_example.py" --8<-- "tests/conveyor_example.py"`
+[//]: # (```python title="conveyor_example.py")
+--8<-- "tests/conveyor_example.py"
 
 ### Result
 
