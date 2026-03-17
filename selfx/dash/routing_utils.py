@@ -7,6 +7,7 @@ from urllib.parse import unquote
 import datetime
 from selfx.backend.datetime_utils import str_to_datetime
 
+ROUTE_PREFIX = "/selfx/"
 
 def parse_url(pathname):  # , href):
     feature = unquote(pathname[1:])
@@ -28,7 +29,7 @@ def check_date(date_string):
 
 
 def construct_url(system, user, feature, start, end):
-    url = f'/dashboard/{system}/{user}/{feature}/{start}/{end}'
+    url = f'{ROUTE_PREFIX}{system}/{user}/{feature}/{start}/{end}'
     return url
 
 

@@ -18,20 +18,22 @@ import dash
 import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
-from celery import chain, Celery
-from celery.schedules import schedule
+from celery import Celery
 from dash import dash_table, dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from flask import redirect, request
 
 from selfx.backend.features import AnalysisManager, get_analysis_intervals
-from selfx.backend.perform import get_sorted_features, perform_requested_features, get_requested_features
+from selfx.backend.perform import perform_requested_features, get_requested_features
 from selfx.backend.results import delete_files, get_result, is_stored
 from selfx.dash import colors
-from selfx.dash.routing_utils import construct_id, parse_url, construct_url, get_today
-
+from selfx.dash.routing_utils import construct_id, parse_url, construct_url, get_today, ROUTE_PREFIX
 from selfx.dash.layouts import get_sidebar, get_topbar
+
+
+
+TITLE = "SelfX"
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +57,6 @@ class SelfXDash:
     - Instantiate feature objects and register their callbacks.
     - Provide routing (URL -> page render) and date-range/reevaluate behavior.
     """
-
-    ROUTE_PREFIX = "/selfx/"
-    TITLE = "SelfX"
-
 
     def __init__(
         self,
@@ -101,9 +99,9 @@ class SelfXDash:
             external_stylesheets=external_stylesheets,
             external_scripts=[],
             suppress_callback_exceptions=True,
-            routes_pathname_prefix=self.ROUTE_PREFIX,
-            requests_pathname_prefix=self.ROUTE_PREFIX,
-            title=self.TITLE,
+            routes_pathname_prefix=ROUTE_PREFIX,
+            requests_pathname_prefix=ROUTE_PREFIX,
+            title=TITLE,
             assets_folder=os.path.join(os.path.dirname(__file__), "assets"),
         )
 
@@ -193,7 +191,7 @@ class SelfXDash:
 
         @self.app.server.before_request
         def redirect_dashboard_root():
-            if request.path in ["/dashboard", "/dashboard/"]:
+            if request.path in [ROUTE_PREFIX[:1], ROUTE_PREFIX]:
                 system = self.plant_names[0]
                 user = self.users[0]
                 feature = next(iter(self.features[system][user].keys()))

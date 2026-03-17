@@ -4,7 +4,7 @@
 
 
 import base64
-from selfx.dash.routing_utils import construct_id, construct_url
+from selfx.dash.routing_utils import construct_id, construct_url, ROUTE_PREFIX
 from dash import dcc, html, State, Input, Output
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
@@ -49,7 +49,7 @@ def get_topbar(selfx, systems, roles, logo, date_picker, system, role, feature, 
     selfxlogo = selfx.app.get_asset_url('Logo_SelfX.svg')
 
     if not logo:
-        topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=selfxlogo), href="/dashboard"),
+        topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=selfxlogo), href=ROUTE_PREFIX[:-1]),
                                         className="logo_div"))
     else:
         topbar_elements = []
@@ -63,7 +63,7 @@ def get_topbar(selfx, systems, roles, logo, date_picker, system, role, feature, 
                 src = 'data:image/svg+xml;base64,{}'.format(encoded_image)
             else:
                 src = 'data:image/png;base64,{}'.format(encoded_image)
-            topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=src), href="/dashboard"), className="logo_div"))
+            topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=src), href=ROUTE_PREFIX[:-1]), className="logo_div"))
         # topbar_elements_left.append(html.Label("Plant:", className="dropdownLabel"))
 
     dd_elements = []
@@ -94,9 +94,6 @@ def get_topbar(selfx, systems, roles, logo, date_picker, system, role, feature, 
     topbar_right = html.Div(children=topbar_elements_right, className="topbar_style_right")
     topbar_elements.append(html.Div([topbar_left, topbar_right], className="topbar_style_right_of_logo"))
     return html.Div(children=topbar_elements, className="topbar_style")
-
-
-
 
 
 def machine_learning(app=None, method="", **kwargs):
