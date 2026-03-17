@@ -5,6 +5,10 @@
 
 import base64
 from selfx.dash.routing_utils import construct_id, construct_url
+from dash import dcc, html, State, Input, Output
+from dash.exceptions import PreventUpdate
+import dash_bootstrap_components as dbc
+import mlflow
 
 
 def get_sidebar(app, system, user, feature, start, end):
@@ -92,11 +96,7 @@ def get_topbar(selfx, systems, roles, logo, date_picker, system, role, feature, 
     return html.Div(children=topbar_elements, className="topbar_style")
 
 
-from dash import dcc, html, State, Input, Output
-from dash.exceptions import PreventUpdate
-import dash_bootstrap_components as dbc
-import mlflow
-import json
+
 
 
 def machine_learning(app=None, method="", **kwargs):

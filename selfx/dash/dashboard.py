@@ -56,7 +56,7 @@ class SelfXDash:
     - Provide routing (URL -> page render) and date-range/reevaluate behavior.
     """
 
-    ROUTE_PREFIX = "/dashboard/"
+    ROUTE_PREFIX = "/selfx/"
     TITLE = "SelfX"
 
 
