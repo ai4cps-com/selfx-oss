@@ -191,7 +191,7 @@ class SelfXDash:
 
         @self.app.server.before_request
         def redirect_dashboard_root():
-            if request.path in [ROUTE_PREFIX[:1], ROUTE_PREFIX]:
+            if request.path.rstrip("/") == ROUTE_PREFIX.rstrip("/"):
                 system = self.plant_names[0]
                 user = self.users[0]
                 feature = next(iter(self.features[system][user].keys()))
@@ -252,6 +252,7 @@ class SelfXDash:
             prevent_initial_call=True,
         )
         def _render_page(pathname):
+            logger.info("Requested path: ", pathname)
             href = pathname
             system, role, feature, start, end = parse_url(pathname)
 

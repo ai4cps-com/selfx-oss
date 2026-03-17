@@ -49,7 +49,7 @@ def get_topbar(selfx, systems, roles, logo, date_picker, system, role, feature, 
     selfxlogo = selfx.app.get_asset_url('Logo_SelfX.svg')
 
     if not logo:
-        topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=selfxlogo), href=ROUTE_PREFIX[:-1]),
+        topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=selfxlogo), href=ROUTE_PREFIX.rstrip("/")),
                                         className="logo_div"))
     else:
         topbar_elements = []
@@ -63,7 +63,7 @@ def get_topbar(selfx, systems, roles, logo, date_picker, system, role, feature, 
                 src = 'data:image/svg+xml;base64,{}'.format(encoded_image)
             else:
                 src = 'data:image/png;base64,{}'.format(encoded_image)
-            topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=src), href=ROUTE_PREFIX[:-1]), className="logo_div"))
+            topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=src), href=ROUTE_PREFIX.rstrip("/")), className="logo_div"))
         # topbar_elements_left.append(html.Label("Plant:", className="dropdownLabel"))
 
     dd_elements = []
