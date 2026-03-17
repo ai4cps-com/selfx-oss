@@ -2,6 +2,7 @@ include README.md
 include LICENSE
 
 recursive-include selfx *.py
+recursive-include selx/dash/assets *
 recursive-include requirements *.txt
 
 global-exclude *.py[cod]
