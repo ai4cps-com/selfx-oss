@@ -4,6 +4,7 @@
 [![PyPI](https://img.shields.io/pypi/v/selfx.svg)](https://pypi.org/project/selfx-oss/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/selfx.svg)](https://pypi.org/project/selfx/)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/y/ai4cps-com/selfx-oss.svg)](https://github.com/ai4cps-com/selfx/graphs/contributors)
+[![Sponsor](https://img.shields.io/badge/Sponsor-❤-ff69b4)](https://github.com/sponsors/ai4cps-com)
 
  *SelfX is a Python framework for building ML & AI apps in the domain of Cyber-Physical Systems (CPSs)*.
 
