@@ -57,6 +57,7 @@ To be added.
 |                               | Support                          | Community               | Priority / SLA           |
 |                               | Professional Services            | ❌                       | Available                |
 
+LLMs can be used to easily create features
 
 See [https://ai4cps.com](https://ai4cps.com) to get in touch.
 

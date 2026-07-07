@@ -67,7 +67,7 @@ class SelfXDash:
         initial_date: Any = None,
         logo: Optional[Union[str, Sequence[str]]] = None,
         analysis_period: int = 60,
-        content_not_ready_refresh_interval: int = 0.5
+        content_not_ready_refresh_interval: float = 0.5
     ) -> None:
         # ---- Inputs / config ----
         self.roles = tuple(roles) if roles is not None else ()
