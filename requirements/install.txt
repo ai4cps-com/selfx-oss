@@ -11,3 +11,5 @@ dill
 joblib
 celery
 ml4cps
+pydotplus
+simpy

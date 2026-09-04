@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: MIT
+﻿# SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Nemanja Hranisavljevic
 # Contact: nemanja@ai4cps.com
 
@@ -30,17 +30,52 @@ def get_sidebar(app, system, user, feature, start, end):
     return sidebar
 
 
-def get_topbar(selfx, systems, roles, logo, date_picker, system, role, feature, start, end):
+def get_topbar(
+    selfx,
+    systems,
+    roles,
+    logo,
+    date_picker,
+    system,
+    role,
+    feature,
+    start,
+    end,
+    show_reevaluate=True,
+):
     topbar_elements_left = []
     topbar_elements_right = []
     topbar_elements = []
+
+    feature_object = selfx._feature_obj.get(system, {}).get(feature)
+    if feature_object is not None and hasattr(feature_object, "topbar_controls"):
+        try:
+            feature_topbar_controls = feature_object.topbar_controls()
+        except Exception:
+            feature_topbar_controls = None
+        if feature_topbar_controls is not None:
+            topbar_elements_right.append(
+                html.Div(
+                    feature_topbar_controls,
+                    className="topbar_feature_controls",
+                    style={
+                        "alignItems": "center",
+                        "boxSizing": "border-box",
+                        "display": "flex",
+                        "height": "100%",
+                        "padding": "6px 12px 6px 0",
+                    },
+                )
+            )
 
     style = {} if date_picker else {'display': 'none'}
     topbar_elements_right.append(dcc.DatePickerRange(
         id='date-picker', persistence=False, start_date=start.replace('_', '.'), style=style,
         end_date=end.replace('_', '.'), display_format='DD.MM.YYYY', minimum_nights=0, updatemode='bothdates'))
+    reevaluate_style = {} if show_reevaluate else {'display': 'none'}
     topbar_elements_right.append(html.Button(className="reevaluate_button",
                                                          id=construct_id("reevaluate"),
+                                                         style=reevaluate_style,
                                                          children=[html.I('replay', className="material-icons"),
                                                                    'Reevaluate']))
 
@@ -80,11 +115,13 @@ def get_topbar(selfx, systems, roles, logo, date_picker, system, role, feature, 
     topbar_elements_left.append(dropdown)
     # topbar_elements_left.append(html.Label("User role:", className="dropdownLabel"))
 
-    dd_elements = []
-    for el in roles:
-        dd_elements.append(dbc.DropdownMenuItem(el, href=construct_url(system, el, feature, start, end)))
-    dropdown = dbc.DropdownMenu(children=dd_elements, label=role, id=construct_id('role_dropdown'), className='role_dropdown')
-    topbar_elements_left.append(dropdown)
+    role_options = list(selfx.features.get(system, {}).keys()) or list(roles)
+    if len(role_options) > 1 or role_options != ["Default"]:
+        dd_elements = []
+        for el in role_options:
+            dd_elements.append(dbc.DropdownMenuItem(el, href=construct_url(system, el, feature, start, end)))
+        dropdown = dbc.DropdownMenu(children=dd_elements, label=role, id=construct_id('role_dropdown'), className='role_dropdown')
+        topbar_elements_left.append(dropdown)
 
     # topbar_elements_left.append(dcc.Dropdown(options=[],
     #                                          clearable=False, value=None, searchable=False,
@@ -172,3 +209,7 @@ def register_modal_state_transition_callbacks(dash_app, graph_id=None):
             return True, [dbc.ModalHeader(f"Event: {data_edge['label']}"),
                           dbc.ModalBody(html.Div(children=content))]
         raise PreventUpdate
+
+
+
+

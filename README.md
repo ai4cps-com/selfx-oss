@@ -27,6 +27,26 @@ at the Institute of Automation Technology.
 
 To be added.
 
+### Styling Overrides
+
+SelfX loads override stylesheets after its default dashboard assets. Apps can
+append project CSS with `css_overrides` when creating `SelfXDash`:
+
+```python
+selfx = dashboard.SelfXDash(
+    css_overrides=["assets/selfx_overrides.css"],
+)
+```
+
+Local CSS files are served by SelfX, and external CSS URLs can also be passed.
+For small changes, pass raw CSS directly:
+
+```python
+selfx = dashboard.SelfXDash(
+    css_overrides=[":root { --selfx-sidebar-width: 19rem; }"],
+)
+```
+
 ### SelfX OSS & SelfX Enterprise
 
 | Category                      | Feature                          | SelfX OOS (Open Source) | SelfX Enterprise         |

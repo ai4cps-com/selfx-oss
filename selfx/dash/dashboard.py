@@ -22,9 +22,9 @@ from celery import Celery
 from dash import dash_table, dcc, html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-from flask import redirect, request
+from flask import Response, redirect, request, send_file
 
-from selfx.backend.features import AnalysisManager, get_analysis_intervals
+from selfx.backend.features import AnalysisManager, Feature, get_analysis_intervals
 from selfx.backend.perform import perform_requested_features, get_requested_features
 from selfx.backend.results import delete_files, get_result, is_stored
 from selfx.dash import colors
@@ -44,6 +44,53 @@ external_stylesheets = [
     dbc.icons.FONT_AWESOME,
     "selfx_style.css",  # assumed to be served from assets/
 ]
+
+
+def _stylesheet_overrides(css_overrides: Any) -> tuple[list[str], list[tuple[str, str, Any]]]:
+    if css_overrides is None:
+        return [], []
+    if isinstance(css_overrides, (str, Path)):
+        css_overrides = [css_overrides]
+
+    stylesheets = []
+    routes = []
+    for index, css_override in enumerate(css_overrides):
+        route = f"{ROUTE_PREFIX.rstrip('/')}/_selfx-css/{index}.css"
+        endpoint = f"selfx_css_override_{index}"
+
+        if isinstance(css_override, str) and "{" in css_override:
+            routes.append(
+                (
+                    route,
+                    endpoint,
+                    lambda css=css_override: Response(css, mimetype="text/css"),
+                )
+            )
+            stylesheets.append(route)
+            continue
+
+        css_path = Path(css_override).expanduser()
+        if css_path.exists():
+            css_path = css_path.resolve()
+            routes.append(
+                (
+                    route,
+                    endpoint,
+                    lambda path=css_path: send_file(path, mimetype="text/css"),
+                )
+            )
+            stylesheets.append(route)
+        else:
+            stylesheets.append(str(css_override))
+
+    return stylesheets, routes
+
+
+def _stylesheet_links(stylesheets: Sequence[str]) -> str:
+    return "\n".join(
+        f'        <link rel="stylesheet" href="{stylesheet}">'
+        for stylesheet in stylesheets
+    )
 
 
 class SelfXDash:
@@ -67,7 +114,9 @@ class SelfXDash:
         initial_date: Any = None,
         logo: Optional[Union[str, Sequence[str]]] = None,
         analysis_period: int = 60,
-        content_not_ready_refresh_interval: float = 0.5
+        content_not_ready_refresh_interval: float = 0.5,
+        css_overrides: Optional[Union[str, Path, Sequence[Union[str, Path]]]] = None,
+        show_reevaluate: bool = True,
     ) -> None:
         # ---- Inputs / config ----
         self.roles = tuple(roles) if roles is not None else ()
@@ -75,6 +124,7 @@ class SelfXDash:
         self.config = config
         self.logo = logo
         self.initial_date = initial_date
+        self.show_reevaluate = show_reevaluate
 
         self.work_day_shift = work_day_shift
         self.analysis_period = analysis_period
@@ -94,6 +144,7 @@ class SelfXDash:
         self.celery_app = create_celery_app()
 
         # ---- Dash app ----
+        override_stylesheets, override_routes = _stylesheet_overrides(css_overrides)
         self.app = dash.Dash(
             __name__,
             external_stylesheets=external_stylesheets,
@@ -104,6 +155,29 @@ class SelfXDash:
             title=TITLE,
             assets_folder=os.path.join(os.path.dirname(__file__), "assets"),
         )
+        for route, endpoint, view_func in override_routes:
+            self.app.server.add_url_rule(route, endpoint=endpoint, view_func=view_func)
+        if override_stylesheets:
+            self.app.index_string = f"""
+<!DOCTYPE html>
+<html>
+    <head>
+        {{%metas%}}
+        <title>{{%title%}}</title>
+        {{%favicon%}}
+        {{%css%}}
+{_stylesheet_links(override_stylesheets)}
+    </head>
+    <body>
+        {{%app_entry%}}
+        <footer>
+            {{%config%}}
+            {{%scripts%}}
+            {{%renderer%}}
+        </footer>
+    </body>
+</html>
+"""
 
         # ---- Component registries / stores ----
         self.date_picker: Dict[str, Any] = {}
@@ -276,6 +350,7 @@ class SelfXDash:
                 roles=self.roles,
                 logo=self._normalize_logos(),
                 date_picker=self._date_picker_enabled(system, feature, role),
+                show_reevaluate=self.show_reevaluate,
                 system=system,
                 role=role,
                 feature=feature,
@@ -401,55 +476,67 @@ class SelfXDash:
             # CREATING UI
             name = system
             tool_config = feature_object.config
+            has_llm_prompt = self._feature_has_llm_prompt(feature_object)
             if tool_config is not None:
-                par_labels = [html.Label(p['label']) for cfg_id, p in tool_config.items()]
-                par_inputs = [dcc.Input(id=construct_id(name, feature, cfg_id), type=p["type"], value=p["value"])
-                              for cfg_id, p in tool_config.items()]
-                par_form = []
-                for i in range(len(par_labels)):
-                    par_form.append(html.Div(children=[par_labels[i], par_inputs[i]], className='modal-row'))
+                if tool_config:
+                    par_labels = [html.Label(p['label']) for cfg_id, p in tool_config.items()]
+                    par_inputs = [dcc.Input(id=construct_id(name, feature, cfg_id), type=p["type"], value=p["value"])
+                                  for cfg_id, p in tool_config.items()]
+                    par_form = []
+                    for i in range(len(par_labels)):
+                        par_form.append(html.Div(children=[par_labels[i], par_inputs[i]], className='modal-row'))
 
-                modal = dbc.Modal([
-                    dbc.ModalHeader("Configure"),
-                    dbc.ModalBody(par_form + [dbc.ModalFooter(
-                        [dbc.Button("Cancel", id=construct_id(name, feature, "close"),
-                                    className="configure-close"),
-                         dbc.Button("Apply", id=construct_id(name, feature, "configure-apply"),
-                                    className="configure-apply")])])],
-                    id=construct_id(name, feature, "modal"), className='modal-content', is_open=False)
+                    modal = dbc.Modal([
+                        dbc.ModalHeader("Configure"),
+                        dbc.ModalBody(par_form + [dbc.ModalFooter(
+                            [dbc.Button("Cancel", id=construct_id(name, feature, "close"),
+                                        className="configure-close"),
+                             dbc.Button("Apply", id=construct_id(name, feature, "configure-apply"),
+                                        className="configure-apply")])])],
+                        id=construct_id(name, feature, "modal"), className='modal-content', is_open=False)
+                    configure_buttons = [
+                        html.Button(className="configure_button",
+                                    id=construct_id(name, feature, "configure"),
+                                    children=[html.I('build_circle', className="material-icons"),
+                                              'Configure']),
+                        dbc.Button(className="reload_button",
+                                   id=construct_id(name, feature, "reload"),
+                                   children=[html.I('refresh', className="material-icons"),
+                                             'Reload'],
+                                   href="javascript:window.location.reload(true)")
+                    ]
+                else:
+                    modal = None
+                    configure_buttons = []
 
-                llm_text = ''
-                if res:
-                    for k, r in res.items():
-                        llm_text = r[feature].get('llm', 'No result')
-                        if llm_text is None:
-                            llm_text = 'No result'
-                        llm_text += str(k) + ': ' + llm_text + '\n'
+                if has_llm_prompt:
+                    llm_text = ''
+                    if res:
+                        for k, r in res.items():
+                            llm_text = r[feature].get('llm', 'No result')
+                            if llm_text is None:
+                                llm_text = 'No result'
+                            llm_text += str(k) + ': ' + llm_text + '\n'
 
-                modalllm = dbc.Modal([
-                    dbc.ModalHeader("LLM"),
-                    dbc.ModalBody(
-                        [dbc.Textarea(id='llm-result', disabled=True, value=llm_text, style={'height': '400px'})] +
-                        [dbc.ModalFooter(
-                            [dbc.Button("Close", id=construct_id(name, feature, "close-llm"),
-                                        className="configure-close")])])],
-                    id=construct_id(name, feature, "modal-llm"), className='modal-content', is_open=False)
+                    modalllm = dbc.Modal([
+                        dbc.ModalHeader("LLM"),
+                        dbc.ModalBody(
+                            [dbc.Textarea(id='llm-result', disabled=True, value=llm_text, style={'height': '400px'})] +
+                            [dbc.ModalFooter(
+                                [dbc.Button("Close", id=construct_id(name, feature, "close-llm"),
+                                            className="configure-close")])])],
+                        id=construct_id(name, feature, "modal-llm"), className='modal-content', is_open=False)
+                    llm_buttons = [
+                        html.Button(className="llm_button",
+                                    id=construct_id(name, feature, "llm"),
+                                    children=[html.I('article', className="material-icons"),
+                                              'LLM'])
+                    ]
+                else:
+                    modalllm = None
+                    llm_buttons = []
 
-                config_reload_buttons = [
-                    html.Button(className="configure_button",
-                                id=construct_id(name, feature, "configure"),
-                                children=[html.I('build_circle', className="material-icons"),
-                                          'Configure']),
-                    dbc.Button(className="reload_button",
-                               id=construct_id(name, feature, "reload"),
-                               children=[html.I('refresh', className="material-icons"),
-                                         'Reload'],
-                               href="javascript:window.location.reload(true)"),
-                    html.Button(className="llm_button",
-                                id=construct_id(name, feature, "llm"),
-                                children=[html.I('article', className="material-icons"),
-                                          'LLM'])
-                ]
+                config_reload_buttons = configure_buttons + llm_buttons
             else:
                 modalllm = None
                 modal = None
@@ -484,29 +571,34 @@ class SelfXDash:
 
     def _register_feature_modals(self, system_name: str, tool: str, feature_object: Any) -> None:
         """Register config + LLM modal toggles for a single feature."""
-        config_keys = list(getattr(feature_object, "config", {}).keys())
+        tool_config = getattr(feature_object, "config", None)
+        config_keys = list(tool_config.keys()) if tool_config else []
 
-        @self.app.callback(
-            [Output(construct_id(system_name, tool, "modal"), "is_open")]
-            + [Output(construct_id(system_name, tool, k), "value") for k in config_keys],
-            [
-                Input(construct_id(system_name, tool, "configure"), "n_clicks"),
-                Input(construct_id(system_name, tool, "close"), "n_clicks"),
-                Input(construct_id(system_name, tool, "configure-apply"), "n_clicks"),
-            ],
-            [State(construct_id(system_name, tool, "modal"), "is_open")]
-            + [State(construct_id(system_name, tool, k), "value") for k in config_keys],
-            prevent_initial_call=True,
-        )
-        def _toggle_config_modal(n_open, n_close, n_apply, is_open, *values):
-            if n_open or n_close or n_apply:
-                is_open = not is_open
+        if config_keys:
+            @self.app.callback(
+                [Output(construct_id(system_name, tool, "modal"), "is_open")]
+                + [Output(construct_id(system_name, tool, k), "value") for k in config_keys],
+                [
+                    Input(construct_id(system_name, tool, "configure"), "n_clicks"),
+                    Input(construct_id(system_name, tool, "close"), "n_clicks"),
+                    Input(construct_id(system_name, tool, "configure-apply"), "n_clicks"),
+                ],
+                [State(construct_id(system_name, tool, "modal"), "is_open")]
+                + [State(construct_id(system_name, tool, k), "value") for k in config_keys],
+                prevent_initial_call=True,
+            )
+            def _toggle_config_modal(n_open, n_close, n_apply, is_open, *values):
+                if n_open or n_close or n_apply:
+                    is_open = not is_open
 
-            if n_apply:
-                for k, v in zip(config_keys, values):
-                    self._feature_obj[system_name][tool].config[k]["value"] = v
+                if n_apply:
+                    for k, v in zip(config_keys, values):
+                        self._feature_obj[system_name][tool].config[k]["value"] = v
 
-            return (is_open,) + values
+                return (is_open,) + values
+
+        if tool_config is None or not self._feature_has_llm_prompt(feature_object):
+            return
 
         @self.app.callback(
             Output(construct_id(system_name, tool, "modal-llm"), "is_open"),
@@ -598,6 +690,10 @@ class SelfXDash:
         if obj is None:
             logger.error("Missing feature object for %s/%s", system, feature)
         return obj
+
+    @staticmethod
+    def _feature_has_llm_prompt(feature_object: Any) -> bool:
+        return getattr(type(feature_object), "llm_prompt", None) is not Feature.llm_prompt
 
     # -------------------------
     # Celery integration
