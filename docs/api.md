@@ -24,5 +24,4 @@
 ::: selfx.dash.dashboard
 ::: selfx.dash.layouts
 ::: selfx.dash.colors
-::: selfx.dash.plot
 ::: selfx.dash.routing_utils
