@@ -113,7 +113,8 @@ $newVersionText = [regex]::Replace(
     1
 )
 
-Set-Content -Path $versionPath -Value $newVersionText -NoNewline -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($versionPath, $newVersionText, $utf8NoBom)
 
 Invoke-Git add selfx/version.py
 Invoke-Git commit -m "Bump version to $Version"
