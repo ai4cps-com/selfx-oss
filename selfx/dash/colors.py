@@ -141,16 +141,16 @@ def get_color_mapping(items=None, positive_color=None, negative_color=None, erro
     color_map = {}
     if positive_color is not None:
         for i in positive_color:
-            color_map[i] = colors.POSITIVE[0]
+            color_map[i] = POSITIVE[0]
     if transparent_color is not None:
         for i in transparent_color:
-            color_map[i] = colors.TRANSPARENT
+            color_map[i] = TRANSPARENT
     if negative_color is not None:
         for i in negative_color:
-            color_map[i] = colors.NEGATIVE[0]
+            color_map[i] = NEGATIVE[0]
     if error_color is not None:
         for i in error_color:
-            color_map[i] = colors.NEGATIVE[1]
+            color_map[i] = NEGATIVE[1]
     if items is not None:
         for k, i in enumerate(items):
             if type(i) is str:
