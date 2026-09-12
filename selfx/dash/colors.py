@@ -5,6 +5,9 @@
 from __future__ import annotations
 from typing import Sequence
 
+import plotly
+
+color_list = plotly.colors.qualitative.Dark24
 
 # Semantic color groups used across charts and UI states.
 POSITIVE: list[str] = ["#04F1D9", "#B1C800", "#45AF97", "#2D00F5"]
