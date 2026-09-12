@@ -12,6 +12,7 @@ flask-restful
 dill
 joblib
 celery
+redis
 ml4cps
 mlflow
 pydotplus
