@@ -135,3 +135,26 @@ def contrast(hex_color: str, *, threshold: float = 186) -> str:
 
     brightness = red * 0.299 + green * 0.587 + blue * 0.114
     return BLACK if brightness > threshold else WHITE
+
+
+def get_color_mapping(items=None, positive_color=None, negative_color=None, error_color=None, transparent_color=None):
+    color_map = {}
+    if positive_color is not None:
+        for i in positive_color:
+            color_map[i] = colors.POSITIVE[0]
+    if transparent_color is not None:
+        for i in transparent_color:
+            color_map[i] = colors.TRANSPARENT
+    if negative_color is not None:
+        for i in negative_color:
+            color_map[i] = colors.NEGATIVE[0]
+    if error_color is not None:
+        for i in error_color:
+            color_map[i] = colors.NEGATIVE[1]
+    if items is not None:
+        for k, i in enumerate(items):
+            if type(i) is str:
+                i = [i]
+            for ii in i:
+                color_map[ii] = color_list[k % 24]
+    return color_map
