@@ -81,7 +81,7 @@ def get_topbar(
 
     for_plant_dropdown = [{"label": sn, "value": sn} for sn in systems]
 
-    selfxlogo = selfx.app.get_asset_url('Logo_SelfX.svg')
+    selfxlogo = selfx.app.get_asset_url('Logo dark.svg')
 
     if not logo:
         topbar_elements.append(html.Div(html.A(html.Img(className='logo', src=selfxlogo), href=ROUTE_PREFIX.rstrip("/")),

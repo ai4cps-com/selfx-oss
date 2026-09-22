@@ -10,7 +10,11 @@
 
 <div align="center">
   <a href="https://www.ai4cps.com">
-    <img src="https://www.ai4cps.com/assets/selfx-dark.svg" width="400px" alt="Maintained by AI4CPS">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="selfx/dash/assets/Logo%20dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="selfx/dash/assets/Logo%20light.svg">
+      <img src="selfx/dash/assets/Logo%20light.svg" width="400px" alt="Maintained by AI4CPS">
+    </picture>
   </a>
 </div>
 
