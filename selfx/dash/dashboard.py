@@ -112,7 +112,7 @@ class SelfXDash:
         config: Any = None,
         work_day_shift: int = 0,
         initial_date: Any = None,
-        logo: Optional[Union[str, Sequence[str]]] = None,
+        logo: Optional[Union[str, Path, Sequence[Union[str, Path]]]] = None,
         analysis_period: int = 60,
         content_not_ready_refresh_interval: float = 0.5,
         css_overrides: Optional[Union[str, Path, Sequence[Union[str, Path]]]] = None,
@@ -664,9 +664,9 @@ class SelfXDash:
     def _normalize_logos(self) -> Optional[List[str]]:
         if self.logo is None:
             return None
-        if isinstance(self.logo, str):
-            return [self.logo]
-        return list(self.logo)
+        if isinstance(self.logo, (str, Path)):
+            return [str(self.logo)]
+        return [str(logo) for logo in self.logo]
 
     def _date_picker_enabled(self, system: str, feature: str, role: str) -> bool:
         try:

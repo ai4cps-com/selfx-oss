@@ -36,8 +36,10 @@ Notes
 from __future__ import annotations
 
 import os
+import time
 import warnings
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from traceback import print_exc
 from typing import Any, Dict, Iterable, Optional
 
@@ -132,15 +134,26 @@ def store_result(interval: Optional[Any], feature: str, result: Any) -> None:
     out_dir = DEFAULT_RESULTS_DIR / prefix
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"{feature}.joblib"
-    tmp_path = path.with_suffix(".joblib.tmp")
+    # Each writer needs its own file, including concurrent saves of one result.
+    tmp_file = NamedTemporaryFile(
+        dir=out_dir, prefix=f"{path.name}.", suffix=".tmp", delete=False
+    )
+    tmp_path = Path(tmp_file.name)
 
     try:
-        joblib.dump(result, tmp_path, compress=False)
-        os.replace(tmp_path, path)  # atomic rename
-    except Exception:
-        if tmp_path.exists():
-            tmp_path.unlink()  # clean partial file
-        raise
+        with tmp_file:
+            joblib.dump(result, tmp_file, compress=False)
+        for attempt in range(5):
+            try:
+                os.replace(tmp_path, path)  # atomic rename
+                break
+            except PermissionError:
+                # Windows can briefly lock the target during another rename/read.
+                if os.name != "nt" or attempt == 4:
+                    raise
+                time.sleep(0.05)
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
 
 def get_result(identifier: str) -> Any:
