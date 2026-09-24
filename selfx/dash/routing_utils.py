@@ -1,41 +1,6 @@
-# SPDX-License-Identifier: MIT
-# Copyright (c) 2026 Nemanja Hranisavljevic
-# Contact: nemanja@ai4cps.com
+"""Compatibility alias for :mod:`ai4cps.dash.routing_utils`."""
 
+from importlib import import_module as _import_module
+import sys as _sys
 
-from urllib.parse import unquote
-import datetime
-from selfx.backend.datetime_utils import str_to_datetime
-
-ROUTE_PREFIX = "/selfx/"
-
-def parse_url(pathname):  # , href):
-    feature = unquote(pathname[1:])
-    split_url = feature.split('/')
-    system = split_url[1]
-    user = split_url[2]
-    feature = split_url[3]
-    start = split_url[4]
-    end = split_url[5]
-    return system, user, feature, start, end
-
-
-def check_date(date_string):
-    try:
-        str_to_datetime(date_string)
-    except:
-        return False
-    return True
-
-
-def construct_url(system, user, feature, start, end):
-    url = f'{ROUTE_PREFIX}{system}/{user}/{feature}/{start}/{end}'
-    return url
-
-
-def construct_id(*args):
-    return '-'.join(args).replace('_', '-').replace(' ', '-').replace('.', '-')
-
-
-def get_today():
-    return datetime.datetime.today().strftime('%Y-%m-%d')
+_sys.modules[__name__] = _import_module("ai4cps.dash.routing_utils")

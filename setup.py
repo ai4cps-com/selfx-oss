@@ -19,11 +19,10 @@ setup(
     author="Nemanja Hranisavljevic",
     author_email="nemanja@ai4cps.com",
     packages=find_packages(exclude=["tests*"]),
-    include_package_data=True,
+    include_package_data=False,
     license="MIT",
     description=(
-        "A Python framework for building apps for AI for CPS."
-        "Developed by AI4CPS."
+        "Deprecated compatibility package for ai4cps. Install ai4cps instead."
     ),
     long_description=io.open("README.md", encoding="utf-8").read(), # pylint: disable=consider-using-with
     long_description_content_type="text/markdown",

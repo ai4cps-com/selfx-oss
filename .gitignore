@@ -3,3 +3,5 @@ __pycache__/
 /tests/Analysis/
 Analysis/
 selfx.egg-info/
+build/
+dist/

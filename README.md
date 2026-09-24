@@ -1,5 +1,17 @@
 # SelfX OSS
 
+> **Deprecated since 0.1.42.** Install [`ai4cps`](https://github.com/ai4cps-com/ai4cps-oss) instead.
+> This distribution now depends on `ai4cps>=0.1.42` and provides compatibility aliases.
+> Existing `selfx` imports continue to work and emit a `FutureWarning` on first import.
+
+```bash
+pip install --upgrade ai4cps
+```
+
+Replace imports such as `from selfx.dash.dashboard import SelfXDash` with
+`from ai4cps.dash.dashboard import SelfXDash`. After migrating your imports,
+you can uninstall the `selfx` compatibility distribution.
+
 [![GitHub](https://img.shields.io/github/license/ai4cps-com/selfx-oss.svg?color=dark-green)](https://github.com/ai4cps-com/selfx-oss/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/selfx.svg)](https://pypi.org/project/selfx-oss/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/selfx.svg)](https://pypi.org/project/selfx/)
