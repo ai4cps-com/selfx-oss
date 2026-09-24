@@ -450,24 +450,43 @@ div#system{
 }
 
 /* Like .control_very_wide_container, but lets the dropdown grow downward instead of
-   clipping/overlapping following content when many multi-select tags wrap onto extra lines. */
+   clipping/overlapping following content when many multi-select tags wrap onto extra lines.
+   Uses flex instead of float so the container's box always includes the dropdown's full
+   height and pushes subsequent siblings down (floats need a clearfix that is easy to break). */
 .control_very_wide_expandable{
   position: relative;
-  z-index: 1;
+  z-index: 0;
+  display: flex;
+  align-items: flex-start;
+  column-gap: 1rem;
   width: 100%;
-  height: auto;
+  /* Override .content_control_wide's fixed height: 40px, which otherwise clamps this
+     box and prevents it from growing to fit its (taller) flex children. */
+  height: auto !important;
   min-height: var(--h-control);
 }
-.control_very_wide_expandable::after{
-  content: "";
-  display: table;
-  clear: both;
+/* Raise only the container whose dropdown is currently open above its siblings,
+   so its menu doesn't render behind a later stacked dropdown/graph. */
+.control_very_wide_expandable:has(.Select.is-open){
+  z-index: 2;
+}
+.control_very_wide_expandable > label{
+  flex: 0 0 auto;
+  padding-top: 0.4rem;
+}
+/* Dash wraps the dropdown as .dash-dropdown > .Select.control_very_wide (two separate
+   elements) - the outer .dash-dropdown wrapper is what needs to grow as a flex item, not
+   just its .Select child, otherwise the base 40px height clips/hides the wrapped tags. */
+.control_very_wide_expandable.content_control_wide .dash-dropdown{
+  flex: 1 1 auto;
+  width: auto !important;
+  height: auto !important;
 }
 .control_very_wide_expandable > .control_very_wide,
 .control_very_wide_expandable .control_very_wide.dash-dropdown{
-  width: calc(100% - 170px) !important;
-  float: right;
-  margin-left: auto;
+  flex: 1 1 auto;
+  width: auto !important;
+  margin-left: 0;
   height: auto !important;
 }
 .control_very_wide_expandable .Select-menu-outer{
